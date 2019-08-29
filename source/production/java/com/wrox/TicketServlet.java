@@ -49,6 +49,12 @@ public class TicketServlet extends HttpServlet
             case "download":
                 this.downloadAttachment(request, response);
                 break;
+            case "update":
+            	this.updateTicketForm(request, response);
+            	break;
+            case "delete":
+            	this.deleteTicket(request, response);
+            	break;
             case "list":
             default:
                 this.listTickets(request, response);
@@ -68,6 +74,9 @@ public class TicketServlet extends HttpServlet
             case "create":
                 this.createTicket(request, response);
                 break;
+            case "update":
+                this.updateTicket(request, response);
+                break;
             case "list":
             default:
                 response.sendRedirect("tickets");
@@ -75,7 +84,52 @@ public class TicketServlet extends HttpServlet
         }
     }
 
-    private void showTicketForm(HttpServletRequest request,
+    private void updateTicket(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
+		// TODO Auto-generated method stub
+    	
+    	String idString = request.getParameter("ticketId");
+        Ticket ticket = this.getTicket(idString, response);
+        
+        ticket.setCustomerName(
+                (String)request.getSession().getAttribute("username")
+        );
+        ticket.setSubject(request.getParameter("subject"));
+        ticket.setBody(request.getParameter("body"));
+        ticket.setDateCreated(Instant.now());
+
+        Part filePart = request.getPart("file1");
+        if(filePart != null && filePart.getSize() > 0)
+        {
+            Attachment attachment = this.processAttachment(filePart);
+            if(attachment != null)
+                ticket.addAttachment(attachment);
+        }
+
+        response.sendRedirect("tickets?action=view&ticketId=" + idString);
+	}
+
+	private void deleteTicket(HttpServletRequest request, HttpServletResponse response)  throws ServletException, IOException{
+		// TODO Auto-generated method stub
+    	String idString = request.getParameter("ticketId");
+    	this.ticketDatabase.remove(Integer.parseInt(idString));
+    	this.listTickets(request, response);
+	}
+
+	private void updateTicketForm(HttpServletRequest request, HttpServletResponse response)  throws ServletException, IOException{
+		// TODO Auto-generated method stub
+		String idString = request.getParameter("ticketId");
+        Ticket ticket = this.getTicket(idString, response);
+        if(ticket == null)
+            return;
+        
+    	request.setAttribute("ticketId", idString);
+        request.setAttribute("ticket", ticket);
+
+        request.getRequestDispatcher("/WEB-INF/jsp/view/updateTicket.jsp")
+               .forward(request, response);
+	}
+
+	private void showTicketForm(HttpServletRequest request,
                                 HttpServletResponse response)
             throws ServletException, IOException
     {
